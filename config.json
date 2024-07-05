@@ -1,0 +1,10 @@
+{
+  "kind": "ragLLMConfig",
+  "apiVersion": "alpha/v1",
+  "spec": {
+    "ollamaUrl": "http://localhost",
+    "ollamaPort": 11434,
+    "qdrantUrl": "http://localhost",
+    "qdrantPort": 433
+  }
+}
