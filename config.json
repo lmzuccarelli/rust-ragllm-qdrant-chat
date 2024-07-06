@@ -8,6 +8,7 @@
     "qdrantPort": 6334,
     "category": "oc-mirror",
     "kbDocsPath": "./kb-docs/",
-    "model": "all-minilm"
+    "model": "all-minilm",
+    "scoreThreshold": 0.8
   }
 }

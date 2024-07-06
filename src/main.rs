@@ -103,7 +103,7 @@ async fn main() -> Result<()> {
     let vecdb_res = qclient.search(config.spec.category, res).await?;
     if !vecdb_res.payload.is_empty() {
         log.info(&format!("score {:#?}", vecdb_res.score));
-        if vecdb_res.score > 0.8 {
+        if vecdb_res.score > config.spec.score_threshold {
             let v = vecdb_res.payload["id"].as_str().unwrap().clone();
             let data = fs::read_to_string(v)?;
             log.hi(&format!(

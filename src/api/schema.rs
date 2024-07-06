@@ -54,6 +54,8 @@ pub struct Spec {
     pub kb_docs_path: String,
     #[serde(rename = "model")]
     pub model: String,
+    #[serde(rename = "scoreThreshold")]
+    pub score_threshold: f32,
 }
 
 pub type Result<T> = core::result::Result<T, Error>;
