@@ -22,6 +22,10 @@ pub struct Cli {
     /// set the skip-embedding flag.
     #[arg(short, long, value_name = "skip-embedding", default_value = "false")]
     pub skip_embedding: bool,
+
+    /// set the user prompt (used for debugging).
+    #[arg(short, long, value_name = "user-prompt", default_value = "")]
+    pub user_prompt: Option<String>,
 }
 
 /// Application configuration
@@ -44,6 +48,12 @@ pub struct Spec {
     pub qdrant_url: String,
     #[serde(rename = "qdrantPort")]
     pub qdrant_port: i32,
+    #[serde(rename = "category")]
+    pub category: String,
+    #[serde(rename = "kbDocsPath")]
+    pub kb_docs_path: String,
+    #[serde(rename = "model")]
+    pub model: String,
 }
 
 pub type Result<T> = core::result::Result<T, Error>;

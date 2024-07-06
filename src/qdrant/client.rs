@@ -22,17 +22,15 @@ impl VectorDB {
         Self { client, id: 0 }
     }
 
-    pub async fn reset_collection(&self) -> Result<()> {
-        self.client
-            .delete_collection("oc-mirror".to_string())
-            .await?;
+    pub async fn reset_collection(&self, collection: String) -> Result<()> {
+        self.client.delete_collection(collection.clone()).await?;
 
         self.client
             .create_collection(CreateCollection {
-                collection_name: "oc-mirror".to_string(),
+                collection_name: collection,
                 vectors_config: Some(VectorsConfig {
                     config: Some(Config::Params(VectorParams {
-                        size: 1536,
+                        size: 384,
                         distance: Distance::Cosine.into(),
                         hnsw_config: None,
                         quantization_config: None,
@@ -50,6 +48,7 @@ impl VectorDB {
 
     pub async fn upsert_embedding(
         &mut self,
+        collection: String,
         gen_embedding: GenerateEmbeddingsResponse,
         file: &MarkdownFile,
     ) -> Result<()> {
@@ -61,20 +60,22 @@ impl VectorDB {
             details: "".to_string(),
         })?;
 
-        println!("Embedded: {}", file.path);
-
         let vec: Vec<f32> = gen_embedding.embeddings.iter().map(|&x| x as f32).collect();
 
         let points = vec![PointStruct::new(self.id, vec, payload)];
         self.client
-            .upsert_points(UpsertPointsBuilder::new("oc-mirror".to_string(), points))
+            .upsert_points(UpsertPointsBuilder::new(collection, points))
             .await?;
         self.id += 1;
 
         Ok(())
     }
 
-    pub async fn search(&self, gen_embedding: GenerateEmbeddingsResponse) -> Result<ScoredPoint> {
+    pub async fn search(
+        &self,
+        collection: String,
+        gen_embedding: GenerateEmbeddingsResponse,
+    ) -> Result<ScoredPoint> {
         let vec: Vec<f32> = gen_embedding.embeddings.iter().map(|&x| x as f32).collect();
 
         let payload_selector = WithPayloadSelector {
@@ -82,7 +83,7 @@ impl VectorDB {
         };
 
         let search_points = SearchPoints {
-            collection_name: "oc-mirror".to_string(),
+            collection_name: collection,
             vector: vec,
             limit: 1,
             with_payload: Some(payload_selector),

@@ -1,10 +1,13 @@
 {
-  "kind": "ragLLMConfig",
-  "apiVersion": "alpha/v1",
+  "kind": "RAGLLMConfig",
+  "apiVersion": "v1alpha1",
   "spec": {
     "ollamaUrl": "http://localhost",
     "ollamaPort": 11434,
-    "qdrantUrl": "http://localhost",
-    "qdrantPort": 433
+    "qdrantUrl": "http://0.0.0.0",
+    "qdrantPort": 6334,
+    "category": "oc-mirror",
+    "kbDocsPath": "./kb-docs/",
+    "model": "all-minilm"
   }
 }

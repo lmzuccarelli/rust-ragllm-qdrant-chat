@@ -5,6 +5,7 @@ use ollama_rs::generation::completion::request::GenerationRequest;
 use ollama_rs::Ollama;
 use tokio::io::AsyncWriteExt;
 
+#[allow(dead_code)]
 pub async fn gen_stream_print(ollama: &Ollama, gen_req: GenerationRequest) -> Result<()> {
     // get response as stream
     let mut stream = ollama.generate_stream(gen_req).await?;

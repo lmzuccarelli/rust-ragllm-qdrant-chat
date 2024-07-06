@@ -9,14 +9,12 @@ use std::{
 pub struct MarkdownFile {
     pub path: String,
     pub contents: String,
-    pub sentences: Vec<String>,
+    pub headings: Vec<String>,
 }
 
 enum FileState {
     None,
-    CodeBlock,
-    Sentence,
-    Comments,
+    Heading,
 }
 
 impl MarkdownFile {
@@ -24,58 +22,33 @@ impl MarkdownFile {
         Self {
             path,
             contents,
-            sentences: Vec::new(),
+            headings: Vec::new(),
         }
     }
 
     pub fn parse(&mut self) {
         let mut contents = Vec::new();
         let mut state = FileState::None;
-        let mut sentence = String::new();
+        let mut headings = String::new();
 
         for line in self.contents.lines() {
+            // we are only interested in headings
             match state {
                 FileState::None => {
-                    if line.starts_with("```") {
-                        state = FileState::CodeBlock;
-                        sentence = String::new();
-                        sentence.push_str(line);
-                        sentence.push('\n');
-                    } else if line.starts_with("---") {
-                        state = FileState::Comments;
-                    } else if !line.starts_with('#') && !line.is_empty() {
-                        state = FileState::Sentence;
-                        sentence = String::new();
-                        sentence.push_str(line);
-                        sentence.push('\n');
+                    if line.starts_with('#') && !line.is_empty() {
+                        state = FileState::Heading;
+                        headings = String::new();
+                        headings.push_str(line);
+                        headings.push('\n');
                     }
                 }
-                FileState::CodeBlock => {
-                    sentence.push_str(line);
-                    if line.starts_with("```") {
-                        contents.push(sentence);
-                        sentence = String::new();
-                        state = FileState::None;
-                    }
-                }
-                FileState::Comments => {
-                    if line.starts_with("---") {
-                        state = FileState::None;
-                    }
-                }
-                FileState::Sentence => {
-                    if line.is_empty() {
-                        state = FileState::None;
-                        contents.push(sentence);
-                        sentence = String::new();
-                    } else {
-                        sentence.push_str(line);
-                        sentence.push('\n');
-                    }
+                FileState::Heading => {
+                    state = FileState::None;
+                    contents.push(headings.clone());
                 }
             }
         }
-        self.sentences = contents;
+        self.headings = contents.clone();
     }
 }
 
@@ -106,10 +79,10 @@ pub fn load_files_from_dir(
             let mut sub_files = load_files_from_dir(log, path, ending, prefix)?;
             files.append(&mut sub_files);
         } else if path.is_file() && path.has_file_extension(ending) {
-            log.info(&format!("Path: {:?}", path));
+            log.info(&format!("reading file {:?} for embedding", path));
             let contents = fs::read_to_string(&path)?;
             let path = Path::new(&path).strip_prefix(prefix)?.to_owned();
-            let key = path.to_str().expect("should find path");
+            let key = path.to_str().expect("path should be valid");
             let mut file = MarkdownFile::new(key.to_string(), contents);
             file.parse();
             files.push(file);
