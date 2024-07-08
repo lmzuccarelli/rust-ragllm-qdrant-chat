@@ -35,6 +35,9 @@ Create your relevant markdown documents
 
 Some hints
 
+- create folders under the kbDocsPath folder
+- each folder could represent a specific category (or for example just be generic and include a variety of markdown files)
+- ensure the folder name matches the category name (in the config.json)
 - have descriptive headings (these are used to generate the embeddings) 
 - keep the contents size small and ensure the contents descibes what you have stated in the heading
 - use multiple small files, each with specific headings
@@ -44,13 +47,13 @@ Update the config.json file (in this repo)
 Launch the embedding service
 
 ```
-./target/release/rust-ragllm-qdrant --config config.json --loglevel info --user-prompt "tell me about enclave support"
+./target/release/rust-ragllm-qdrant --config config.json --loglevel info 
 ```
 
-Launch normal prompt workflow
+Launch normal prompt workflow (starts a service omn port descibed in serverPort field of the config)
 
 ```
-./target/release/rust-ragllm-qdrant --config config.json --loglevel info --skip-embedding --user-prompt "tell me about enclave support"
+./target/release/rust-ragllm-qdrant --config config.json --loglevel info --skip-embedding 
 ```
 
 
