@@ -104,7 +104,7 @@ impl PayloadInterface for ImplPayloadInterface {
                     status: "KO".to_string(),
                     query: Some(query.clone()),
                     score: 0.0.to_string(),
-                    data: "I could not find any releated info, please refine your prompt"
+                    data: "I could not find any related info, please refine your prompt"
                         .to_string(),
                 };
             }
@@ -113,7 +113,7 @@ impl PayloadInterface for ImplPayloadInterface {
                 status: "KO".to_string(),
                 query: Some(query.clone()),
                 score: 0.0.to_string(),
-                data: "I could not find any releated info, please refine your prompt".to_string(),
+                data: "I could not find any related info, please refine your prompt".to_string(),
             };
         }
         Ok(result)
