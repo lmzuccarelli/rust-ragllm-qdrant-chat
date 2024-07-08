@@ -1,4 +1,3 @@
-use crate::api::schema::*;
 use crate::error::handler::*;
 use crate::MarkdownFile;
 use ollama_rs::generation::embeddings::GenerateEmbeddingsResponse;
@@ -13,16 +12,19 @@ use qdrant_client::Qdrant;
 use serde_json::json;
 
 pub struct VectorDB {
-    client: Qdrant,
     id: u64,
+    client: Qdrant,
 }
 
 impl VectorDB {
     pub fn new(client: Qdrant) -> Self {
-        Self { client, id: 0 }
+        Self { id: 0, client }
     }
 
-    pub async fn reset_collection(&self, collection: String) -> Result<()> {
+    pub async fn reset_collection(
+        &self,
+        collection: String,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         self.client.delete_collection(collection.clone()).await?;
 
         self.client
@@ -51,7 +53,7 @@ impl VectorDB {
         collection: String,
         gen_embedding: GenerateEmbeddingsResponse,
         file: &MarkdownFile,
-    ) -> Result<()> {
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let payload: Payload = json!({
             "id": file.path.clone(),
         })
@@ -75,7 +77,7 @@ impl VectorDB {
         &self,
         collection: String,
         gen_embedding: GenerateEmbeddingsResponse,
-    ) -> Result<ScoredPoint> {
+    ) -> Result<ScoredPoint, Box<dyn std::error::Error>> {
         let vec: Vec<f32> = gen_embedding.embeddings.iter().map(|&x| x as f32).collect();
 
         let payload_selector = WithPayloadSelector {

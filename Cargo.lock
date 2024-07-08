@@ -800,6 +800,7 @@ dependencies = [
  "http 1.1.0",
  "http-body 1.0.0",
  "httparse",
+ "httpdate",
  "itoa",
  "pin-project-lite",
  "smallvec",
@@ -1446,9 +1447,13 @@ dependencies = [
 name = "rust-ragllm-qdrant"
 version = "0.1.0"
 dependencies = [
+ "bytes",
  "clap",
  "custom-logger",
  "futures",
+ "http-body-util",
+ "hyper 1.4.0",
+ "hyper-util",
  "ollama-rs",
  "qdrant-client",
  "serde",

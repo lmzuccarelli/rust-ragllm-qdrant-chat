@@ -6,7 +6,8 @@
     "ollamaPort": 11434,
     "qdrantUrl": "http://0.0.0.0",
     "qdrantPort": 6334,
-    "category": "oc-mirror",
+    "serverPort": 7000,
+    "category": "quantum-computing",
     "kbDocsPath": "./kb-docs/",
     "model": "all-minilm",
     "scoreThreshold": 0.8

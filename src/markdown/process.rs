@@ -1,4 +1,3 @@
-use crate::api::schema::*;
 use custom_logger::*;
 use std::{
     fs,
@@ -71,7 +70,7 @@ pub fn load_files_from_dir(
     dir: PathBuf,
     ending: &str,
     prefix: &PathBuf,
-) -> Result<Vec<MarkdownFile>> {
+) -> Result<Vec<MarkdownFile>, Box<dyn std::error::Error>> {
     let mut files = Vec::new();
     for entry in fs::read_dir(dir)? {
         let path = entry?.path();

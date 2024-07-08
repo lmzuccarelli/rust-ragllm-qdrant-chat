@@ -29,7 +29,7 @@ pub struct Cli {
 }
 
 /// Application configuration
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ApplicationConfig {
     #[serde(rename = "kind")]
     pub kind: String,
@@ -38,7 +38,7 @@ pub struct ApplicationConfig {
     pub spec: Spec,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Spec {
     #[serde(rename = "ollamaUrl")]
     pub ollama_url: String,
@@ -52,12 +52,10 @@ pub struct Spec {
     pub category: String,
     #[serde(rename = "kbDocsPath")]
     pub kb_docs_path: String,
+    #[serde(rename = "serverPort")]
+    pub server_port: u16,
     #[serde(rename = "model")]
     pub model: String,
     #[serde(rename = "scoreThreshold")]
     pub score_threshold: f32,
 }
-
-pub type Result<T> = core::result::Result<T, Error>;
-
-pub type Error = Box<dyn std::error::Error>;
