@@ -69,6 +69,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let mut qclient = VectorDB::new(client.unwrap());
         // setup ollama client
         let ollama = Ollama::new(cfg.spec.ollama_url, cfg.spec.ollama_port as u16);
+
         log.debug(&format!("ollama connection {:#?}", ollama));
 
         log.info("executing embedding workflow");
@@ -89,14 +90,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             for sentence in file.headings.clone().into_iter() {
                 let res = ollama
                     .generate_embeddings(cfg.spec.model.clone(), sentence, None)
-                    .await?;
+                    .await;
+
+                if res.is_err() {
+                    log.error(&format!("embeddings {:#?}", res.err().unwrap()));
+                    exit(1);
+                }
 
                 // add to collection (vector database)
                 let res = qclient
-                    .upsert_embedding(cfg.spec.category.clone(), res, &file)
+                    .upsert_embedding(cfg.spec.category.clone(), res.unwrap(), &file)
                     .await;
                 if res.is_err() {
-                    log.warn(&format!("upsert {:#?}", res.err()));
+                    log.error(&format!("upsert {:#?}", res.err().unwrap()));
+                    exit(1);
                 }
             }
         }

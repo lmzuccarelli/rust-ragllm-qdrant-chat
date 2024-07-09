@@ -74,7 +74,7 @@ impl PayloadInterface for ImplPayloadInterface {
                 status: "KO".to_string(),
                 query: None,
                 score: 0.0.to_string(),
-                data: format!("qdrant {:#?}", client.err()),
+                data: format!("qdrant {:#?}", client.err().unwrap()),
             };
             return Ok(res_err);
         }
@@ -85,9 +85,18 @@ impl PayloadInterface for ImplPayloadInterface {
 
         let res = ollama
             .generate_embeddings(config.spec.model, query.clone(), None)
-            .await?;
+            .await;
+        if res.is_err() {
+            let res_err = ResponseDetails {
+                status: "KO".to_string(),
+                query: None,
+                score: 0.0.to_string(),
+                data: format!("ollama {:#?}", res.err().unwrap()),
+            };
+            return Ok(res_err);
+        }
 
-        let vecdb_res = qclient.search(config.spec.category, res).await?;
+        let vecdb_res = qclient.search(config.spec.category, res.unwrap()).await?;
         if !vecdb_res.payload.is_empty() {
             log.info(&format!("score {:#?}", vecdb_res.score));
             if vecdb_res.score > config.spec.score_threshold {
@@ -131,18 +140,30 @@ pub async fn process_payload<T: PayloadInterface>(
         (&Method::POST, "/query") => {
             let max = req.body().size_hint().upper().unwrap_or(u64::MAX);
             if max > 1024 * 64 {
-                let mut resp = Response::new(Full::new(Bytes::from("body too big")));
+                let resp_details = ResponseDetails {
+                    status: "KO".to_string(),
+                    score: 0.0.to_string(),
+                    query: None,
+                    data: "body too big".to_string(),
+                };
+                let resp_json = serde_json::to_string(&resp_details).unwrap();
+                let mut resp = Response::new(Full::new(Bytes::from(resp_json)));
                 *resp.status_mut() = hyper::StatusCode::PAYLOAD_TOO_LARGE;
                 return Ok(resp);
             }
-
             let req_body = req.collect().await?.to_bytes();
             let payload = String::from_utf8(req_body.to_vec()).unwrap();
             log.info(&format!("payload {:#?}", payload));
             let query_json: QueryDetails = serde_json::from_str(&payload).unwrap();
             let res = q.payload(log, config, query_json.query.clone()).await;
-            let resp_json = serde_json::to_string(&res.unwrap()).unwrap();
-            Ok(Response::new(Full::new(Bytes::from(resp_json))))
+            let resp_json = serde_json::to_string(&res.as_ref().unwrap()).unwrap();
+            let mut final_res = Response::new(Full::new(Bytes::from(resp_json)));
+            if res.unwrap().status == "KO" {
+                *final_res.status_mut() = hyper::StatusCode::INTERNAL_SERVER_ERROR;
+            } else {
+                *final_res.status_mut() = hyper::StatusCode::OK;
+            }
+            return Ok(final_res);
         }
         // health endpoint
         (&Method::GET, "/isalive") => {
@@ -153,7 +174,9 @@ pub async fn process_payload<T: PayloadInterface>(
                 data: "service is up".to_string(),
             };
             let resp_json = serde_json::to_string(&resp_details).unwrap();
-            Ok(Response::new(Full::new(Bytes::from(resp_json))))
+            let mut final_resp = Response::new(Full::new(Bytes::from(resp_json)));
+            *final_resp.status_mut() = hyper::StatusCode::INTERNAL_SERVER_ERROR;
+            return Ok(final_resp);
         }
         // all other routes
         _ => {
@@ -164,7 +187,9 @@ pub async fn process_payload<T: PayloadInterface>(
                 data: "ensure you post to the /query endpoint with valid json".to_string(),
             };
             let resp_json = serde_json::to_string(&resp_details).unwrap();
-            Ok(Response::new(Full::new(Bytes::from(resp_json))))
+            let mut final_resp = Response::new(Full::new(Bytes::from(resp_json)));
+            *final_resp.status_mut() = hyper::StatusCode::NOT_FOUND;
+            return Ok(final_resp);
         }
     }
 }
