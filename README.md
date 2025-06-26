@@ -1,21 +1,21 @@
 # Overview
 
-A RAG (retrieval augmented genertion) agent using llama3 LLM via the ollama api service with a qdrant
-vector database that updates vectors based on reading markdown files in chunks 
+A RAG (retrieval augmented genertion) agent using llama3 LLM via the llama.cpp api service with a qdrant
+vector database that updates vectors based on reading markdown files (bash scripts) in chunks. 
+
+This version includes a simple chat client for user interaction
 
 ## Requirements
 
-This service uses ollama3 (and the all-minilm embedding model), as well as qdrant vectordb
+This service uses llama.cpp for both model serving and embeddings, as well as qdrant vectordb
 
-### ollama3
+### llama.cpp
 
-Download and launch ollama3 services https://ollama.com/
+As this project relies heavily on llama.cpp - please reference the repo (how build, install and server both embeddings and model)
 
-Ensure access to the all-minilm model
+https://github.com/ggml-org/llama.cpp
 
-```
-ollama pull all-minilm
-```
+Start 2 server instances one for the embeddings and another to serve the model to infer against.
 
 ### qdrant
 
@@ -31,7 +31,7 @@ podman run -p 6333:6333 -p 6334:6334 -e QDRANT_SERVICE_GRPC_PORT="6334"  -v $(pw
 
 Clone this repo
 
-cd rust-ragllm-qdrant
+cd rust-ragllm-qdrant-chat
 
 ```
 make build
@@ -53,23 +53,14 @@ Update the config.json file (in this repo)
 Launch the embedding service
 
 ```
-./target/release/rust-ragllm-qdrant --config config.json --loglevel info 
+./target/release/rust-ragllm-qdrant-chat --config config.json --loglevel info 
 ```
 
-Launch normal prompt workflow (starts a service on a port indicated in the "serverPort" field of the config)
+Launch normal chat client workflow
 
 ```
-./target/release/rust-ragllm-qdrant --config config.json --loglevel info --skip-embedding 
+./target/release/rust-ragllm-qdrant-chat --config config.json --loglevel info -chat-client 
 ```
-
-Check if its all working (this assumes you have executed the embedding workflow with category=oc-mirror and a directory under kb-docs/oc-mirror and serverPort=7000)
-
-```
-curl -d'{"category":"oc-mirror", "query": "what is enclave support"}' -H "Accept: application/json" -H "Content-Type: application/json" http://localhost:7000/query
-```
-
-
-A TUI (terminal user interface) front end is available at https://github.com/lmzuccarelli/rust-ragllm-tui
 
 
 

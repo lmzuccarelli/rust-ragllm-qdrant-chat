@@ -1,23 +1,21 @@
 [package]
-name = "rust-ragllm-qdrant"
-version = "0.1.0"
+name = "rust-ragllm-qdrant-chat"
+version = "0.2.0"
 edition = "2021"
 
 [dependencies]
 clap = { version = "4.5.8", features = ["derive"] }
 futures = "0.3.30"
-ollama-rs = { version = "0.2.0", features = ["stream"] }
 qdrant-client = "1.10.1"
 shuttle-qdrant = "0.46.0"
 tokio = { version = "1.38.0", features = ["full"] }
-custom-logger = { git = "https://github.com/lmzuccarelli/rust-custom-logger", branch = "main", version = "0.1.4" }
+custom-logger = { git = "https://github.com/lmzuccarelli/rust-custom-logger", branch = "main", version = "0.2.0" }
 serde = "1.0.203"
 serde_derive = "1.0.203"
 serde_json = "1.0.120"
-hyper = { version = "1.4.0", features = ["full"] }
-hyper-util = "0.1.6"
-bytes = "1.6.0"
-http-body-util = "0.1.2"
+reqwest = { version = "0.12.20", features = ["json"] }
+async-trait = "0.1.88"
+futures-util = "0.3.31"
 
 [profile.release]
 strip = true # Strip symbols from the binary

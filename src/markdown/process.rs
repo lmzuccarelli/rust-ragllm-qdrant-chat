@@ -1,54 +1,14 @@
-use custom_logger::*;
+use custom_logger as log;
 use std::{
     fs,
     path::{Path, PathBuf},
 };
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct MarkdownFile {
     pub path: String,
     pub contents: String,
-    pub headings: Vec<String>,
-}
-
-enum FileState {
-    None,
-    Heading,
-}
-
-impl MarkdownFile {
-    pub fn new(path: String, contents: String) -> Self {
-        Self {
-            path,
-            contents,
-            headings: Vec::new(),
-        }
-    }
-
-    pub fn parse(&mut self) {
-        let mut contents = Vec::new();
-        let mut state = FileState::None;
-        let mut headings = String::new();
-
-        for line in self.contents.lines() {
-            // we are only interested in headings
-            match state {
-                FileState::None => {
-                    if line.starts_with('#') && !line.is_empty() {
-                        state = FileState::Heading;
-                        headings = String::new();
-                        headings.push_str(line);
-                        headings.push('\n');
-                    }
-                }
-                FileState::Heading => {
-                    state = FileState::None;
-                    contents.push(headings.clone());
-                }
-            }
-        }
-        self.headings = contents.clone();
-    }
+    pub headers: Option<String>,
 }
 
 trait HasFileExt {
@@ -66,26 +26,101 @@ impl HasFileExt for Path {
 
 // Load files from directory by ending
 pub fn load_files_from_dir(
-    log: &Logging,
     dir: PathBuf,
     ending: &str,
     prefix: &PathBuf,
+    use_headers: bool,
 ) -> Result<Vec<MarkdownFile>, Box<dyn std::error::Error>> {
     let mut files = Vec::new();
     for entry in fs::read_dir(dir)? {
         let path = entry?.path();
         if path.is_dir() {
-            let mut sub_files = load_files_from_dir(log, path, ending, prefix)?;
+            let mut sub_files = load_files_from_dir(path, ending, prefix, use_headers)?;
             files.append(&mut sub_files);
         } else if path.is_file() && path.has_file_extension(ending) {
-            log.info(&format!("reading file {:?} for embedding", path));
+            log::info!("reading file {:?} for embedding", path);
             let contents = fs::read_to_string(&path)?;
             let path = Path::new(&path).strip_prefix(prefix)?.to_owned();
-            let key = path.to_str().expect("path should be valid");
-            let mut file = MarkdownFile::new(key.to_string(), contents);
-            file.parse();
-            files.push(file);
+            let path_id = path.to_str().expect("path should be valid");
+            if !use_headers {
+                let words: Vec<String> = contents.split_whitespace().map(str::to_string).collect();
+                let res = batch_file_contents(words, path_id.to_string());
+                files.append(&mut res.unwrap());
+            } else {
+                let res = batch_file_headers(contents, path_id.to_string());
+                files.append(&mut res.unwrap());
+            }
         }
     }
     Ok(files)
+}
+
+pub fn batch_file_contents(
+    words: Vec<String>,
+    path_id: String,
+) -> Result<Vec<MarkdownFile>, Box<dyn std::error::Error>> {
+    let mut result: Vec<MarkdownFile> = Vec::new();
+    let batch_size = 200;
+    let overlap = 20;
+    let batch_count = words.len() / batch_size;
+    let remainder = words.len() % batch_size;
+
+    log::info!("batch count {}", batch_count);
+    log::info!("remainder  {}", remainder);
+    log::info!("path id    {}", path_id);
+
+    for i in 0..batch_count {
+        let from = i * batch_size;
+        let to = (i * batch_size) + batch_size + overlap;
+        log::info!("from {}", from);
+        log::info!("to   {}", to);
+        let mkd = MarkdownFile {
+            path: format!("{}-{}", path_id, i),
+            headers: None,
+            contents: words[from..to].join(" ").clone(),
+        };
+        log::info!("content length  {}", mkd.contents.len());
+        result.insert(0, mkd);
+    }
+
+    let mkd = MarkdownFile {
+        path: format!("{}-{}", path_id, batch_count),
+        headers: None,
+        contents: words[batch_count * batch_size..].join(" ").clone(),
+    };
+    log::info!("remainder from {}", batch_count * batch_size);
+    log::info!("remainder length {}", mkd.contents.len());
+    result.insert(0, mkd);
+
+    Ok(result)
+}
+
+pub fn batch_file_headers(
+    words: String,
+    path_id: String,
+) -> Result<Vec<MarkdownFile>, Box<dyn std::error::Error>> {
+    let mut result: Vec<MarkdownFile> = Vec::new();
+    let mut headers = String::new();
+
+    log::info!("path id    {}", path_id);
+
+    let lines: Vec<String> = words.split("\n").map(str::to_string).collect();
+    for line in lines.iter() {
+        if line.contains("# This script") {
+            headers.push_str(&format!("{}\n", line));
+            break;
+        }
+    }
+    let mkd = MarkdownFile {
+        path: format!("{}", path_id),
+        headers: Some(headers),
+        contents: words.clone(),
+    };
+    if mkd.headers.is_some() {
+        log::debug!("headers length  {}", mkd.headers.as_ref().unwrap().len());
+    }
+    log::debug!("content length  {}", mkd.contents.len());
+    result.insert(0, mkd);
+
+    Ok(result)
 }

@@ -1,6 +1,5 @@
 use crate::error::handler::*;
 use crate::MarkdownFile;
-use ollama_rs::generation::embeddings::GenerateEmbeddingsResponse;
 use qdrant_client::qdrant::vectors_config::Config;
 use qdrant_client::qdrant::with_payload_selector::SelectorOptions;
 use qdrant_client::qdrant::{
@@ -51,20 +50,19 @@ impl VectorDB {
     pub async fn upsert_embedding(
         &mut self,
         collection: String,
-        gen_embedding: GenerateEmbeddingsResponse,
-        file: &MarkdownFile,
+        embedding: Vec<f32>,
+        mkd_file: &MarkdownFile,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let payload: Payload = json!({
-            "id": file.path.clone(),
+            "id": mkd_file.path.clone(),
+            "contents": mkd_file.contents.clone(),
         })
         .try_into()
         .map_err(|_| EmbeddingsError {
             details: "".to_string(),
         })?;
 
-        let vec: Vec<f32> = gen_embedding.embeddings.iter().map(|&x| x as f32).collect();
-
-        let points = vec![PointStruct::new(self.id, vec, payload)];
+        let points = vec![PointStruct::new(self.id, embedding.clone(), payload)];
         self.client
             .upsert_points(UpsertPointsBuilder::new(collection, points))
             .await?;
@@ -76,24 +74,23 @@ impl VectorDB {
     pub async fn search(
         &self,
         collection: String,
-        gen_embedding: GenerateEmbeddingsResponse,
-    ) -> Result<ScoredPoint, Box<dyn std::error::Error>> {
-        let vec: Vec<f32> = gen_embedding.embeddings.iter().map(|&x| x as f32).collect();
-
+        embedding: Vec<f32>,
+        search_limit: u64,
+    ) -> Result<Vec<ScoredPoint>, Box<dyn std::error::Error>> {
         let payload_selector = WithPayloadSelector {
             selector_options: Some(SelectorOptions::Enable(true)),
         };
 
         let search_points = SearchPoints {
             collection_name: collection,
-            vector: vec,
-            limit: 1,
+            vector: embedding.clone(),
+            limit: search_limit,
             with_payload: Some(payload_selector),
             ..Default::default()
         };
 
         let search_result = self.client.search_points(search_points).await?;
-        let result = search_result.result[0].clone();
+        let result = search_result.result.clone();
         Ok(result)
     }
 }
