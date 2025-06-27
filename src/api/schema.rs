@@ -72,6 +72,8 @@ pub struct Spec {
     pub use_headers: bool,
     #[serde(rename = "fileExtension")]
     pub file_extension: String,
+    #[serde(rename = "headerRegex")]
+    pub header_regex: Option<String>,
     #[serde(rename = "searchLimit")]
     pub search_limit: u64,
 }

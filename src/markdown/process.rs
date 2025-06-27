@@ -30,15 +30,17 @@ pub fn load_files_from_dir(
     ending: &str,
     prefix: &PathBuf,
     use_headers: bool,
+    header_regex: Option<String>,
 ) -> Result<Vec<MarkdownFile>, Box<dyn std::error::Error>> {
     let mut files = Vec::new();
     for entry in fs::read_dir(dir)? {
         let path = entry?.path();
         if path.is_dir() {
-            let mut sub_files = load_files_from_dir(path, ending, prefix, use_headers)?;
+            let mut sub_files =
+                load_files_from_dir(path, ending, prefix, use_headers, header_regex.clone())?;
             files.append(&mut sub_files);
         } else if path.is_file() && path.has_file_extension(ending) {
-            log::info!("reading file {:?} for embedding", path);
+            log::debug!("reading file {:?} for embedding", path);
             let contents = fs::read_to_string(&path)?;
             let path = Path::new(&path).strip_prefix(prefix)?.to_owned();
             let path_id = path.to_str().expect("path should be valid");
@@ -47,7 +49,7 @@ pub fn load_files_from_dir(
                 let res = batch_file_contents(words, path_id.to_string());
                 files.append(&mut res.unwrap());
             } else {
-                let res = batch_file_headers(contents, path_id.to_string());
+                let res = batch_file_headers(contents, path_id.to_string(), header_regex.clone());
                 files.append(&mut res.unwrap());
             }
         }
@@ -98,15 +100,17 @@ pub fn batch_file_contents(
 pub fn batch_file_headers(
     words: String,
     path_id: String,
+    header_regex: Option<String>,
 ) -> Result<Vec<MarkdownFile>, Box<dyn std::error::Error>> {
     let mut result: Vec<MarkdownFile> = Vec::new();
     let mut headers = String::new();
 
-    log::info!("path id    {}", path_id);
+    log::debug!("path id    {}", path_id);
 
     let lines: Vec<String> = words.split("\n").map(str::to_string).collect();
     for line in lines.iter() {
-        if line.contains("# This script") {
+        let header_text = header_regex.as_ref().map_or("# script", |v| v).to_string();
+        if line.contains(&header_text.clone()) {
             headers.push_str(&format!("{}\n", line));
             break;
         }

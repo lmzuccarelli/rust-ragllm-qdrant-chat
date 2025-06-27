@@ -8,6 +8,7 @@ use llamacpp::generate::get_embeddings;
 use qdrant_client::Qdrant;
 use std::process::exit;
 use std::sync::Arc;
+use std::time::Instant;
 use std::{fs, str::FromStr};
 
 mod api;
@@ -64,6 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     );
 
     if !chat_client {
+        let now = Instant::now();
         // check our kb docs folder
         let folder = &format!(
             "{}/{}",
@@ -75,6 +77,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             &cfg.spec.file_extension,
             &".".into(),
             cfg.spec.use_headers,
+            cfg.spec.header_regex,
         );
 
         log::debug!("markdown batch {:?}", files.as_ref().unwrap());
@@ -86,14 +89,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             exit(1);
         }
 
-        for mkd in files.unwrap().into_iter() {
+        for mkd in files.as_ref().unwrap().into_iter() {
             let mut contents = String::new();
             if cfg.spec.use_headers {
                 contents.push_str(&mkd.headers.as_ref().unwrap().clone());
                 log::info!("markdown headers {:?}", contents);
             } else {
                 contents.push_str(&mkd.contents.clone());
-                log::info!("markdown contents {}", contents);
+                log::debug!("markdown contents {}", contents);
             }
             let res_embeddings = get_embeddings(embedding_url.clone(), contents.clone()).await;
             log::debug!("res embeddings {:?}", res_embeddings);
@@ -102,6 +105,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 .await;
             log::debug!("qdrant upsert results {:?}", qdrant_res);
         }
+        let elapsed = now.elapsed();
+        log::info!("indexed {} files", files.unwrap().len());
+        log::info!("time to complete indexing : {:.2?}", elapsed);
     } else {
         // chat mode
 
