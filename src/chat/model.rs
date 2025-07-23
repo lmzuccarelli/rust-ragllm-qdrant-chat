@@ -45,6 +45,7 @@ pub struct CompletionRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub temperature: Option<f32>,
     pub stream: bool,
+    pub max_tokens: usize,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

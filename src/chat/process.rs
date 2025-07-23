@@ -48,11 +48,11 @@ impl ChatSession {
     pub async fn chat(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         log::info!("welcome!! input your question at the prompt. Use 'exit' to quit");
 
-        let mut prompt = "A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions.
-### Human: Hello, Assistant.
-### Assistant: Hello. How may I help you today?
-### Human: Please tell me the largest city in Europe.
-### Assistant: Sure. The largest city in Europe is Moscow, the capital of Russia.".to_owned();
+        let mut prompt = "A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions.".to_owned();
+        //### Human: Hello, Assistant.
+        //### Assistant: Hello. How may I help you today?
+        //### Human: Please tell me the largest city in Europe.
+        //### Assistant: Sure. The largest city in Europe is Moscow, the capital of Russia.".to_owned();
 
         loop {
             print!("> ");
@@ -111,14 +111,15 @@ impl ChatSession {
             let request = CompletionRequest {
                 messages: self.messages.clone(),
                 prompt: prompt.clone(),
-                top_k: 49,
-                top_p: 0.9,
+                top_k: 20,
+                top_p: 0.7,
                 n_keep: 68,
                 n_predict: 256,
                 cache_prompt: false,
                 stop: vec!["\n".to_string(), "### Human:".to_string()],
                 temperature: Some(0.2),
                 stream: true,
+                max_tokens: 2048,
             };
 
             // send request
